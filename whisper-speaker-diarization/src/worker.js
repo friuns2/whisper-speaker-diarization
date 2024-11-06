@@ -1,4 +1,3 @@
-
 import { pipeline, AutoProcessor, AutoModelForAudioFrameClassification } from '@xenova/transformers';
 
 const PER_DEVICE_CONFIG = {

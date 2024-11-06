@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Svelte/Vite specific
+.vite
+.svelte-kit
