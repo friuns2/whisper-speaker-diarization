@@ -1,25 +1,26 @@
-import { useState, forwardRef, useRef, useImperativeHandle, useEffect, useCallback } from 'react';
+import { signal, effect } from '@preact/signals';
+import { forwardRef, useImperativeHandle } from 'react';
 
 const EXAMPLE_URL = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/hopper.webm';
 
 const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) => {
     // UI states
-    const [dragging, setDragging] = useState(false);
-    const fileInputRef = useRef(null);
+    const dragging = signal(false);
+    const fileInputRef = signal(null);
 
     // Create a reference to the audio and video elements
-    const audioElement = useRef(null);
-    const videoElement = useRef(null);
+    const audioElement = signal(null);
+    const videoElement = signal(null);
 
-    const currentTimeRef = useRef(0);
+    const currentTimeRef = signal(0);
     useImperativeHandle(ref, () => ({
         setMediaTime(time) {
-            if (audioElement.current?.src) {
-                audioElement.current.currentTime = time;
-            } else if (videoElement.current?.src) {
-                videoElement.current.currentTime = time;
+            if (audioElement.value?.src) {
+                audioElement.value.currentTime = time;
+            } else if (videoElement.value?.src) {
+                videoElement.value.currentTime = time;
             }
-            currentTimeRef.current = time;
+            currentTimeRef.value = time;
         }
     }));
 
@@ -31,18 +32,18 @@ const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) =
         // Create a URL for the Blob
         if (type.startsWith('audio/')) {
             // Dispose the previous source
-            videoElement.current.pause();
-            videoElement.current.removeAttribute('src');
-            videoElement.current.load();
+            videoElement.value.pause();
+            videoElement.value.removeAttribute('src');
+            videoElement.value.load();
 
-            audioElement.current.src = url;
+            audioElement.value.src = url;
         } else if (type.startsWith('video/')) {
             // Dispose the previous source
-            audioElement.current.pause();
-            audioElement.current.removeAttribute('src');
-            audioElement.current.load();
+            audioElement.value.pause();
+            audioElement.value.removeAttribute('src');
+            audioElement.value.load();
 
-            videoElement.current.src = url;
+            videoElement.value.src = url;
         } else {
             alert(`Unsupported file type: ${type}`);
         }
@@ -69,18 +70,18 @@ const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) =
 
     const handleDrop = (event) => {
         event.preventDefault();
-        setDragging(false);
+        dragging.value = false;
         readFile(event.dataTransfer.files[0]);
     };
 
     const handleClick = (e) => {
         if (e.target.tagName === 'VIDEO' || e.target.tagName === 'AUDIO') {
             e.preventDefault();
-            fileInputRef.current.click();
+            fileInputRef.value.click();
         } else if (e.target.tagName === 'INPUT') {
             e.stopPropagation();
         } else {
-            fileInputRef.current.click();
+            fileInputRef.value.click();
             e.stopPropagation();
         }
     };
@@ -110,43 +111,43 @@ const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) =
         }
     };
 
-    const requestRef = useRef();
+    const requestRef = signal(null);
 
-    const updateTime = useCallback(() => {
+    const updateTime = () => {
         let elem;
-        if (audioElement.current?.src) {
-            elem = audioElement.current;
+        if (audioElement.value?.src) {
+            elem = audioElement.value;
 
-        } else if (videoElement.current?.src) {
-            elem = videoElement.current;
+        } else if (videoElement.value?.src) {
+            elem = videoElement.value;
         }
 
-        if (elem && currentTimeRef.current !== elem.currentTime) {
-            currentTimeRef.current = elem.currentTime;
+        if (elem && currentTimeRef.value !== elem.currentTime) {
+            currentTimeRef.value = elem.currentTime;
             onTimeUpdate(elem.currentTime);
         }
 
         // Request the next frame
-        requestRef.current = requestAnimationFrame(updateTime);
-    }, [onTimeUpdate]);
+        requestRef.value = requestAnimationFrame(updateTime);
+    };
 
-    useEffect(() => {
+    effect(() => {
         // Start the animation
-        requestRef.current = requestAnimationFrame(updateTime);
+        requestRef.value = requestAnimationFrame(updateTime);
 
         return () => {
             // Cleanup on component unmount
-            cancelAnimationFrame(requestRef.current);
+            cancelAnimationFrame(requestRef.value);
         };
-    }, [updateTime]);
+    });
     return (
         <div
             {...props}
             onClick={handleClick}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
-            onDragEnter={(e) => setDragging(true)}
-            onDragLeave={(e) => setDragging(false)}
+            onDragEnter={(e) => dragging.value = true}
+            onDragLeave={(e) => dragging.value = false}
         >
             <input
                 type="file"
@@ -159,7 +160,7 @@ const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) =
                 <audio
                     ref={audioElement}
                     controls
-                    style={{ display: audioElement.current?.src ? 'block' : 'none' }}
+                    style={{ display: audioElement.value?.src ? 'block' : 'none' }}
                     className='w-full max-h-full'
                 />
             }
@@ -167,20 +168,20 @@ const MediaInput = forwardRef(({ onInputChange, onTimeUpdate, ...props }, ref) =
                 <video
                     ref={videoElement}
                     controls
-                    style={{ display: videoElement.current?.src ? 'block' : 'none' }}
+                    style={{ display: videoElement.value?.src ? 'block' : 'none' }}
                     className='w-full max-h-full'
                 />
             }
             {
-                !audioElement.current?.src && !videoElement.current?.src && (
+                !audioElement.value?.src && !videoElement.value?.src && (
                     <div className="w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md h-[250px]"
-                        style={{ borderColor: dragging ? 'blue' : 'lightgray' }}
+                        style={{ borderColor: dragging.value ? 'blue' : 'lightgray' }}
                     >
                         <span className="text-gray-600 text-center"><u>Drag & drop</u> or <u>click</u><br />to select media</span>
                         <span className="text-gray-500 text-sm hover:text-gray-800 mt-2" onClick={async (e) => {
                             e.stopPropagation();
                             const buffer = await fetch(EXAMPLE_URL).then((r) => r.arrayBuffer());
-                            videoElement.current.src = URL.createObjectURL(new Blob([buffer], { type: 'video/mp4' }));
+                            videoElement.value.src = URL.createObjectURL(new Blob([buffer], { type: 'video/mp4' }));
                             onBufferLoad(buffer, 'video/mp4');
                         }}>(or <u>try an example</u>)</span>
                     </div>

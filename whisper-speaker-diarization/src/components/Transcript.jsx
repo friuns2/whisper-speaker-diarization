@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useRef } from "react";
+import { effect, computed } from "@preact/signals";
+import { signal } from "@preact/signals";
 
 const Chunk = ({ chunk, currentTime, onClick, ...props }) => {
-    const spanRef = useRef(null);
+    const spanRef = signal(null);
     const { text, timestamp } = chunk;
     const [start, end] = timestamp;
 
     const bolded = start <= currentTime && currentTime < end;
 
-    useEffect(() => {
-        if (spanRef.current && bolded) { // scroll into view
-            spanRef.current.scrollIntoView({
+    effect(() => {
+        if (spanRef.value && bolded) { // scroll into view
+            spanRef.value.scrollIntoView({
                 behavior: 'smooth',
                 block: 'center',
                 inline: 'center',
             });
         }
-    }, [bolded]);
+    });
 
     return (
         <span {...props}>
@@ -35,17 +36,17 @@ const Chunk = ({ chunk, currentTime, onClick, ...props }) => {
 }
 
 const Transcript = ({ transcript, segments, currentTime, setCurrentTime, ...props }) => {
-    const jsonTranscript = useMemo(() => {
+    const jsonTranscript = computed(() => {
         return JSON.stringify({
             ...transcript,
             segments,
         }, null, 2)
             // post-process the JSON to make it more readable
             .replace(/( {4}"timestamp": )\[\s+(\S+)\s+(\S+)\s+\]/gm, "$1[$2 $3]");
-    }, [transcript, segments]);
+    });
 
     // Post-process the transcript to highlight speaker changes
-    const postProcessedTranscript = useMemo(() => {
+    const postProcessedTranscript = computed(() => {
         let prev = 0;
         const words = transcript.chunks;
 
@@ -73,10 +74,10 @@ const Transcript = ({ transcript, segments, currentTime, setCurrentTime, ...prop
             }
         }
         return result;
-    }, [transcript, segments]);
+    });
 
     const downloadTranscript = () => {
-        const blob = new Blob([jsonTranscript], { type: 'application/json' });
+        const blob = new Blob([jsonTranscript.value], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -88,7 +89,7 @@ const Transcript = ({ transcript, segments, currentTime, setCurrentTime, ...prop
     return (<>
         <div {...props}>
             {
-                postProcessedTranscript.map(({ label, start, end, chunks }, i) => (
+                postProcessedTranscript.value.map(({ label, start, end, chunks }, i) => (
                     <div className="border-t py-2" key={i}>
                         <div className="flex justify-between">
                             <label className="text-xs font-medium">{label}</label>
