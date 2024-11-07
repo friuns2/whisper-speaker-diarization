@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper Diarization</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@2.51.6/dist/full.css" rel="stylesheet" type="text/css" />
+
+    <!-- Vue.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+
+    <!-- Material Icons CDN -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body class="bg-white dark:bg-gray-900">
+    <div id="app" class="flex flex-col h-screen mx-auto text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 max-w-[600px]">
+        <template v-if="status === 'loading'">
+            <div class="flex justify-center items-center fixed w-screen h-screen bg-black z-10 bg-opacity-[92%] top-0 left-0">
+                <div class="w-[500px]">
+                    <p class="text-center mb-1 text-white text-md">{{ loadingText }}</p>
+                    <template v-for="(item, index) in loadingItems" :key="index">
+                        <Od :text="item.file" :percentage="item.progress" :total="item.total" />
+                    </template>
+                </div>
+            </div>
+        </template>
+        <div class="my-auto">
+            <div class="flex flex-col items-center mb-2 text-center">
+                <h1 class="text-5xl font-bold mb-2">Whisper Diarization</h1>
+                <h2 class="text-xl font-semibold">In-browser automatic speech recognition w/ <br/> word-level timestamps and speaker segmentation</h2>
+            </div>
+            <div class="w-full min-h-[220px] flex flex-col justify-center items-center">
+                <template v-if="!media">
+                    <p class="mb-2">
+                        You are about to download <a href="https://huggingface.co/onnx-community/whisper-base_timestamped" target="_blank" rel="noreferrer" class="font-medium underline">whisper-base</a> and 
+                        <a href="https://huggingface.co/onnx-community/pyannote-segmentation-3.0" target="_blank" rel="noreferrer" class="font-medium underline">pyannote-segmentation-3.0</a>, 
+                        two powerful speech recognition models for generating word-level timestamps across 100 different languages and speaker segmentation, respectively. Once loaded, the models (
+                        {{ modelSize }}MB + 6MB) will be cached and reused when you revisit the page.
+                        <br/> <br/>
+                        Everything runs locally in your browser using <a href="https://huggingface.co/docs/transformers.js" target="_blank" rel="noreferrer" class="underline">🤗 Transformers.js</a> 
+                        and ONNX Runtime Web, meaning no API calls are made to a server for inference. You can even disconnect from the internet after the model has loaded!
+                    </p>
+                </template>
+                <div class="flex flex-col w-full m-3 max-w-[520px]" v-show="status !== 'loading'">
+                    <span class="text-sm mb-0.5">Input audio/video</span>
+                    <MediaInput ref="mediaInput" class="flex items-center border rounded-md cursor-pointer min-h-[100px] max-h-[500px] overflow-hidden" 
+                        @input-change="handleMediaChange" @time-update="handleTimeUpdate"/>
+                </div>
+                <div class="relative w-full flex justify-center items-center" v-show="status !== 'loading'">
+                    <button class="border px-4 py-2 rounded-lg bg-blue-400 text-white hover:bg-blue-500 disabled:bg-blue-100 disabled:cursor-not-allowed select-none"
+                        @click="runModel" :disabled="status === 'running' || status === 'ready' && !media">
+                        {{ status === 'ready' ? 'Run model' : 'Load model' }}
+                    </button>
+                    <template v-if="status !== 'loading'">
+                        <div class="absolute right-0 bottom-0">
+                            <span class="text-xs">Language:</span><br/>
+                            <Ad class="border rounded-lg p-1 max-w-[100px]" :language="language" @language-change="handleLanguageChange"/>
+                        </div>
+                    </template>
+                </div>
+                <template v-if="status === 'running'">
+                    <p class="text-sm text-gray-600 text-center mt-2">Running...</p>
+                </template>
+                <template v-if="transcript && time">
+                    <div class="w-full mt-4 border rounded-md">
+                        <Fd class="p-2 max-h-[200px] overflow-y-auto scrollbar-thin select-none" 
+                            :transcript="transcript" :segments="segments" :currentTime="time" @current-time-change="handleTimeChange"/>
+                    </div>
+                    <p class="text-sm text-gray-600 text-end p-1">Generation time: <span class="text-gray-800 font-semibold">{{ time.toFixed(2) }}ms</span></p>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <script src ="script.js"></script>
+  
+      
+    
+</body>
+</html>

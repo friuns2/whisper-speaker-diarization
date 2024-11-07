@@ -1,5 +1,5 @@
 
-import { pipeline, AutoProcessor, AutoModelForAudioFrameClassification } from '@xenova/transformers';
+import { pipeline, AutoProcessor, AutoModelForAudioFrameClassification } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2';
 
 const PER_DEVICE_CONFIG = {
     webgpu: {
